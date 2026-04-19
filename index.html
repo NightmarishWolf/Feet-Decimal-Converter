@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feet and Inches to Decimal Converter</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f6f8fa;
+            color: #24292f;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .converter-container {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 24px;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .input-field {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+            flex: 1;
+        }
+        label {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        input {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input:focus {
+            border-color: #0969da;
+            box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.3);
+        }
+        button {
+            background-color: #2da44e;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #2c974b;
+        }
+        .result {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #f3f4f6;
+            border-radius: 6px;
+            font-size: 20px;
+            font-weight: bold;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="converter-container">
+    <h1>Measurement Converter</h1>
+    <div class="input-group">
+        <div class="input-field">
+            <label for="feet">Feet</label>
+            <input type="number" id="feet" placeholder="e.g. 5" min="0">
+        </div>
+        <div class="input-field">
+            <label for="inches">Inches</label>
+            <input type="number" id="inches" placeholder="e.g. 6" min="0" max="11" step="any">
+        </div>
+    </div>
+    <button onclick="convert()">Convert to Decimal</button>
+    <div id="result" class="result"></div>
+</div>
+
+<script>
+    function convert() {
+        // Get the values from the inputs
+        const feetInput = document.getElementById('feet').value;
+        const inchesInput = document.getElementById('inches').value;
+        
+        // Convert strings to numbers (default to 0 if empty)
+        const feet = parseFloat(feetInput) || 0;
+        const inches = parseFloat(inchesInput) || 0;
+        
+        // Calculate decimal feet (1 foot = 12 inches)
+        const decimalFeet = feet + (inches / 12);
+        
+        // Display the result
+        const resultDiv = document.getElementById('result');
+        // Round to 4 decimal places to keep it clean
+        resultDiv.textContent = `${decimalFeet.toFixed(4).replace(/\.?0+$/, '')} feet`;
+        resultDiv.style.display = 'block';
+    }
+
+    // Add enter key support
+    document.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            convert();
+        }
+    });
+</script>
+
+</body>
+</html>
