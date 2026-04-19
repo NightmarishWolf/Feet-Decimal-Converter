@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Feet and Inches to Decimal Converter</title>
+    <title>Scale Calibrator & Converter</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -12,39 +12,48 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
         }
-        .converter-container {
-            background: #ffffff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-        }
-        h1 {
-            font-size: 24px;
-            margin-top: 0;
-            margin-bottom: 20px;
-        }
-        .input-group {
-            display: flex;
-            justify-content: space-between;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        .input-field {
+        .main-container {
             display: flex;
             flex-direction: column;
-            text-align: left;
+            gap: 20px;
+            width: 100%;
+            max-width: 500px;
+        }
+        .panel {
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            font-size: 20px;
+            margin-top: 0;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eaecef;
+            color: #0969da;
+        }
+        .input-group {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        .row {
+            display: flex;
+            gap: 15px;
+        }
+        .row .input-group {
             flex: 1;
         }
         label {
             font-size: 14px;
             font-weight: 600;
-            margin-bottom: 5px;
+            margin-bottom: 6px;
         }
         input {
             padding: 10px;
@@ -59,7 +68,6 @@
             box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.3);
         }
         button {
-            background-color: #2da44e;
             color: white;
             border: none;
             padding: 12px 20px;
@@ -69,64 +77,175 @@
             cursor: pointer;
             width: 100%;
             transition: background-color 0.2s;
+            margin-top: 5px;
         }
-        button:hover {
-            background-color: #2c974b;
-        }
+        .btn-calibrate { background-color: #8250df; }
+        .btn-calibrate:hover { background-color: #6e40c9; }
+        
+        .btn-convert { background-color: #2da44e; }
+        .btn-convert:hover { background-color: #2c974b; }
+
         .result {
-            margin-top: 25px;
-            padding: 15px;
+            margin-top: 15px;
+            padding: 12px;
             background-color: #f3f4f6;
             border-radius: 6px;
-            font-size: 20px;
-            font-weight: bold;
+            font-size: 16px;
+            font-weight: 600;
             display: none;
+            word-break: break-word;
+        }
+        .error {
+            background-color: #ffebe9;
+            color: #cf222e;
+        }
+        .help-text {
+            font-size: 12px;
+            color: #57606a;
+            margin-top: 4px;
         }
     </style>
 </head>
 <body>
 
-<div class="converter-container">
-    <h1>Measurement Converter</h1>
-    <div class="input-group">
-        <div class="input-field">
-            <label for="feet">Feet</label>
-            <input type="number" id="feet" placeholder="e.g. 5" min="0">
+<div class="main-container">
+    
+    <!-- Calibrator Section -->
+    <div class="panel">
+        <h2>1. Calibrator</h2>
+        <div class="row">
+            <div class="input-group">
+                <label for="planLength">Measured on Plan (inches)</label>
+                <input type="number" id="planLength" placeholder="e.g. 2.5" step="any">
+            </div>
+            <div class="input-group">
+                <label for="realLength">Actual Length (feet)</label>
+                <input type="number" id="realLength" placeholder="e.g. 10" step="any">
+            </div>
         </div>
-        <div class="input-field">
-            <label for="inches">Inches</label>
-            <input type="number" id="inches" placeholder="e.g. 6" min="0" max="11" step="any">
-        </div>
+        <button class="btn-calibrate" onclick="calibrate()">Calculate Scale</button>
+        <div id="calibrateResult" class="result"></div>
     </div>
-    <button onclick="convert()">Convert to Decimal</button>
-    <div id="result" class="result"></div>
+
+    <!-- Converter Section -->
+    <div class="panel">
+        <h2>2. Converter</h2>
+        <div class="input-group">
+            <label for="scaleInput">Scale (feet per inch)</label>
+            <input type="number" id="scaleInput" placeholder="Auto-filled by calibrator or enter manually" step="any">
+        </div>
+        <div class="input-group">
+            <label for="distanceInput">Real Distance</label>
+            <input type="text" id="distanceInput" placeholder="e.g. 56' 6.5\" or 6 1/2in">
+            <div class="help-text">Supports formats like: 56ft 6in, 56' 6", 6 1/2in, 72in</div>
+        </div>
+        <button class="btn-convert" onclick="convert()">Convert to Scaled Inches</button>
+        <div id="convertResult" class="result"></div>
+    </div>
+
 </div>
 
 <script>
-    function convert() {
-        // Get the values from the inputs
-        const feetInput = document.getElementById('feet').value;
-        const inchesInput = document.getElementById('inches').value;
+    // --- PARSER LOGIC (Replicated from GDScript) ---
+    function parseFeetInches(s) {
+        let feet = 0;
+        let inches = 0;
+
+        // Match feet (e.g., 56ft, 56', 56 feet)
+        const feetRe = /(\\d+(?:\.\d+)?)\s*(?:ft|feet|')/i;
+        const feetMatch = s.match(feetRe);
+        if (feetMatch) {
+            feet = parseFloat(feetMatch[1]);
+        }
+
+        // Match inches (e.g., 6in, 6", 6 inches, or fractions like 6 1/2in, 1/2in)
+        const inchRe = /(\\d+(?:\s+\\d+/\\d+)?|\\d*\.\\d+|\\d+/\\d+)\s*(?:in|inches|"|”)/i;
+        const inchMatch = s.match(inchRe);
         
-        // Convert strings to numbers (default to 0 if empty)
-        const feet = parseFloat(feetInput) || 0;
-        const inches = parseFloat(inchesInput) || 0;
-        
-        // Calculate decimal feet (1 foot = 12 inches)
-        const decimalFeet = feet + (inches / 12);
-        
-        // Display the result
-        const resultDiv = document.getElementById('result');
-        // Round to 4 decimal places to keep it clean
-        resultDiv.textContent = `${decimalFeet.toFixed(4).replace(/\.?0+$/, '')} feet`;
-        resultDiv.style.display = 'block';
+        if (inchMatch) {
+            let inchStr = inchMatch[1].trim();
+            if (inchStr.includes('/')) {
+                let whole = 0.0;
+                let frac = 0.0;
+                let parts = inchStr.split(/\s+/); // split by space
+                
+                if (parts.length === 2) {
+                    whole = parseFloat(parts[0]);
+                    let fracParts = parts[1].split('/');
+                    if (fracParts.length === 2) {
+                        frac = parseFloat(fracParts[0]) / parseFloat(fracParts[1]);
+                    }
+                } else if (parts.length === 1) {
+                    let fracParts = parts[0].split('/');
+                    if (fracParts.length === 2) {
+                        frac = parseFloat(fracParts[0]) / parseFloat(fracParts[1]);
+                    }
+                }
+                inches = whole + frac;
+            } else {
+                inches = parseFloat(inchStr);
+            }
+        }
+
+        return feet + (inches / 12.0); // Total decimal feet
     }
 
-    // Add enter key support
-    document.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            convert();
+    // --- CALIBRATOR LOGIC ---
+    function calibrate() {
+        const planLength = parseFloat(document.getElementById('planLength').value) || 0;
+        const realLength = parseFloat(document.getElementById('realLength').value) || 0;
+        const resultDiv = document.getElementById('calibrateResult');
+
+        resultDiv.style.display = 'block';
+
+        if (planLength === 0) {
+            resultDiv.textContent = "Error: Plan length cannot be zero.";
+            resultDiv.className = 'result error';
+            return;
         }
+
+        const calculatedScale = realLength / planLength; // ft per inch
+        
+        // Auto-fill the converter scale field
+        document.getElementById('scaleInput').value = calculatedScale;
+        
+        resultDiv.textContent = `Calibrated: 1 in = ${calculatedScale.toFixed(4)} ft`;
+        resultDiv.className = 'result';
+    }
+
+    // --- CONVERTER LOGIC ---
+    function convert() {
+        const distanceStr = document.getElementById('distanceInput').value || "";
+        const scaleFeetPerInch = parseFloat(document.getElementById('scaleInput').value) || 0;
+        const resultDiv = document.getElementById('convertResult');
+
+        resultDiv.style.display = 'block';
+
+        if (scaleFeetPerInch === 0) {
+            resultDiv.textContent = "Error: Scale cannot be zero.";
+            resultDiv.className = 'result error';
+            return;
+        }
+
+        // Parse string to total decimal feet
+        const totalFeet = parseFeetInches(distanceStr);
+        
+        // Convert real feet to scaled inches on paper
+        const scaledInches = totalFeet / scaleFeetPerInch;
+
+        resultDiv.textContent = `${distanceStr} = ${scaledInches.toFixed(4)} in (to scale)`;
+        resultDiv.className = 'result';
+    }
+
+    // Add enter key support for text inputs
+    document.getElementById('distanceInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') convert();
+    });
+    document.getElementById('planLength').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') calibrate();
+    });
+    document.getElementById('realLength').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') calibrate();
     });
 </script>
 
